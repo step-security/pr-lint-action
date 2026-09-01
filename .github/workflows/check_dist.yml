@@ -1,0 +1,39 @@
+name: Check dist
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check-dist:
+    name: Check dist
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: 'package.json'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build dist
+        run: yarn build && yarn package
+
+      - name: Compare dist
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build:"
+            git diff --ignore-space-at-eol --text dist/
+            exit 1
+          fi

@@ -1,0 +1,6 @@
+dist/
+lib/
+node_modules/
+.eslintrc.js
+.idea
+.github/**
