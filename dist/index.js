@@ -1,200 +1,6 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 5915:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.hasReviewedState = exports.run = void 0;
-const core_1 = __nccwpck_require__(7484);
-const github_1 = __nccwpck_require__(3228);
-const subscription_1 = __nccwpck_require__(9295);
-const GITHUB_ACTIONS_LOGIN = "github-actions[bot]";
-const repoToken = (0, core_1.getInput)("repo-token", { required: true });
-const titleRegex = new RegExp((0, core_1.getInput)("title-regex", {
-    required: true,
-}));
-const onFailedRegexFailAction = (0, core_1.getInput)("on-failed-regex-fail-action") === "true";
-const onFailedRegexCreateReview = (0, core_1.getInput)("on-failed-regex-create-review") === "true";
-const onFailedRegexRequestChanges = (0, core_1.getInput)("on-failed-regex-request-changes") === "true";
-const onFailedRegexComment = (0, core_1.getInput)("on-failed-regex-comment");
-const onSucceededRegexDismissReviewComment = (0, core_1.getInput)("on-succeeded-regex-dismiss-review-comment");
-const octokit = (0, github_1.getOctokit)(repoToken);
-async function run() {
-    await (0, subscription_1.validateSubscription)();
-    const githubContext = github_1.context;
-    const pullRequest = githubContext.issue;
-    const title = githubContext.payload.pull_request?.title ?? "";
-    const comment = onFailedRegexComment.replace("%regex%", titleRegex.source);
-    (0, core_1.debug)(`Title Regex: ${titleRegex.source}`);
-    (0, core_1.debug)(`Title: ${title}`);
-    const titleMatchesRegex = titleRegex.test(title);
-    if (!titleMatchesRegex) {
-        if (onFailedRegexCreateReview) {
-            await createOrUpdateReview(comment, pullRequest);
-        }
-        if (onFailedRegexFailAction) {
-            (0, core_1.setFailed)(comment);
-        }
-    }
-    else {
-        if (onFailedRegexCreateReview) {
-            await dismissReview(pullRequest);
-        }
-    }
-}
-exports.run = run;
-const createOrUpdateReview = async (comment, pullRequest) => {
-    const review = await getExistingReview(pullRequest);
-    if (review === undefined) {
-        await octokit.rest.pulls.createReview({
-            owner: pullRequest.owner,
-            repo: pullRequest.repo,
-            pull_number: pullRequest.number,
-            body: comment,
-            event: onFailedRegexRequestChanges ? "REQUEST_CHANGES" : "COMMENT",
-        });
-    }
-    else {
-        await octokit.rest.pulls.updateReview({
-            owner: pullRequest.owner,
-            repo: pullRequest.repo,
-            pull_number: pullRequest.number,
-            review_id: review.id,
-            body: comment,
-        });
-    }
-};
-const dismissReview = async (pullRequest) => {
-    (0, core_1.debug)(`Trying to get existing review`);
-    const review = await getExistingReview(pullRequest);
-    if (review === undefined) {
-        (0, core_1.debug)("Found no existing review");
-        return;
-    }
-    if (review.state === "COMMENTED") {
-        await octokit.rest.pulls.updateReview({
-            owner: pullRequest.owner,
-            repo: pullRequest.repo,
-            pull_number: pullRequest.number,
-            review_id: review.id,
-            body: onSucceededRegexDismissReviewComment,
-        });
-        (0, core_1.debug)(`Updated existing review`);
-    }
-    else {
-        await octokit.rest.pulls.dismissReview({
-            owner: pullRequest.owner,
-            repo: pullRequest.repo,
-            pull_number: pullRequest.number,
-            review_id: review.id,
-            message: onSucceededRegexDismissReviewComment,
-        });
-        (0, core_1.debug)(`Dismissed existing review`);
-    }
-};
-const getExistingReview = async (pullRequest) => {
-    (0, core_1.debug)(`Getting reviews`);
-    const reviews = await octokit.rest.pulls.listReviews({
-        owner: pullRequest.owner,
-        repo: pullRequest.repo,
-        pull_number: pullRequest.number,
-    });
-    return reviews.data.find((review) => {
-        return (review.user != null &&
-            isGitHubActionUser(review.user.login) &&
-            (0, exports.hasReviewedState)(review.state));
-    });
-};
-const isGitHubActionUser = (login) => {
-    return login === GITHUB_ACTIONS_LOGIN;
-};
-const hasReviewedState = (state) => {
-    return state === "CHANGES_REQUESTED" || state === "COMMENTED";
-};
-exports.hasReviewedState = hasReviewedState;
-
-
-/***/ }),
-
-/***/ 9295:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateSubscription = void 0;
-const fs_1 = __importDefault(__nccwpck_require__(9896));
-const axios_1 = __importStar(__nccwpck_require__(7269));
-const core = __importStar(__nccwpck_require__(7484));
-async function validateSubscription() {
-    const eventPath = process.env.GITHUB_EVENT_PATH;
-    let repoPrivate;
-    if (eventPath && fs_1.default.existsSync(eventPath)) {
-        const eventData = JSON.parse(fs_1.default.readFileSync(eventPath, "utf8"));
-        repoPrivate = eventData?.repository?.private;
-    }
-    const upstream = "morrisoncole/pr-lint-action";
-    const action = process.env.GITHUB_ACTION_REPOSITORY;
-    const docsUrl = "https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions";
-    core.info("");
-    core.info("\u001b[1;36mStepSecurity Maintained Action\u001b[0m");
-    core.info(`Secure drop-in replacement for ${upstream}`);
-    if (repoPrivate === false)
-        core.info("\u001b[32m\u2713 Free for public repositories\u001b[0m");
-    core.info(`\u001b[36mLearn more:\u001b[0m ${docsUrl}`);
-    core.info("");
-    if (repoPrivate === false)
-        return;
-    const serverUrl = process.env.GITHUB_SERVER_URL || "https://github.com";
-    const body = { action: action || "" };
-    if (serverUrl !== "https://github.com")
-        body.ghes_server = serverUrl;
-    try {
-        await axios_1.default.post(`https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/maintained-actions-subscription`, body, { timeout: 3000 });
-    }
-    catch (error) {
-        if ((0, axios_1.isAxiosError)(error) && error.response?.status === 403) {
-            core.error(`\u001b[1;31mThis action requires a StepSecurity subscription for private repositories.\u001b[0m`);
-            core.error(`\u001b[31mLearn how to enable a subscription: ${docsUrl}\u001b[0m`);
-            process.exit(1);
-        }
-        core.info("Timeout or API not reachable. Continuing to next step.");
-    }
-}
-exports.validateSubscription = validateSubscription;
-
-
-/***/ }),
-
 /***/ 4914:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -37093,6 +36899,200 @@ module.exports = {
 
 /***/ }),
 
+/***/ 1730:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hasReviewedState = exports.run = void 0;
+const core_1 = __nccwpck_require__(7484);
+const github_1 = __nccwpck_require__(3228);
+const subscription_1 = __nccwpck_require__(9470);
+const GITHUB_ACTIONS_LOGIN = "github-actions[bot]";
+const repoToken = (0, core_1.getInput)("repo-token", { required: true });
+const titleRegex = new RegExp((0, core_1.getInput)("title-regex", {
+    required: true,
+}));
+const onFailedRegexFailAction = (0, core_1.getInput)("on-failed-regex-fail-action") === "true";
+const onFailedRegexCreateReview = (0, core_1.getInput)("on-failed-regex-create-review") === "true";
+const onFailedRegexRequestChanges = (0, core_1.getInput)("on-failed-regex-request-changes") === "true";
+const onFailedRegexComment = (0, core_1.getInput)("on-failed-regex-comment");
+const onSucceededRegexDismissReviewComment = (0, core_1.getInput)("on-succeeded-regex-dismiss-review-comment");
+const octokit = (0, github_1.getOctokit)(repoToken);
+async function run() {
+    await (0, subscription_1.validateSubscription)();
+    const githubContext = github_1.context;
+    const pullRequest = githubContext.issue;
+    const title = githubContext.payload.pull_request?.title ?? "";
+    const comment = onFailedRegexComment.replace("%regex%", titleRegex.source);
+    (0, core_1.debug)(`Title Regex: ${titleRegex.source}`);
+    (0, core_1.debug)(`Title: ${title}`);
+    const titleMatchesRegex = titleRegex.test(title);
+    if (!titleMatchesRegex) {
+        if (onFailedRegexCreateReview) {
+            await createOrUpdateReview(comment, pullRequest);
+        }
+        if (onFailedRegexFailAction) {
+            (0, core_1.setFailed)(comment);
+        }
+    }
+    else {
+        if (onFailedRegexCreateReview) {
+            await dismissReview(pullRequest);
+        }
+    }
+}
+exports.run = run;
+const createOrUpdateReview = async (comment, pullRequest) => {
+    const review = await getExistingReview(pullRequest);
+    if (review === undefined) {
+        await octokit.rest.pulls.createReview({
+            owner: pullRequest.owner,
+            repo: pullRequest.repo,
+            pull_number: pullRequest.number,
+            body: comment,
+            event: onFailedRegexRequestChanges ? "REQUEST_CHANGES" : "COMMENT",
+        });
+    }
+    else {
+        await octokit.rest.pulls.updateReview({
+            owner: pullRequest.owner,
+            repo: pullRequest.repo,
+            pull_number: pullRequest.number,
+            review_id: review.id,
+            body: comment,
+        });
+    }
+};
+const dismissReview = async (pullRequest) => {
+    (0, core_1.debug)(`Trying to get existing review`);
+    const review = await getExistingReview(pullRequest);
+    if (review === undefined) {
+        (0, core_1.debug)("Found no existing review");
+        return;
+    }
+    if (review.state === "COMMENTED") {
+        await octokit.rest.pulls.updateReview({
+            owner: pullRequest.owner,
+            repo: pullRequest.repo,
+            pull_number: pullRequest.number,
+            review_id: review.id,
+            body: onSucceededRegexDismissReviewComment,
+        });
+        (0, core_1.debug)(`Updated existing review`);
+    }
+    else {
+        await octokit.rest.pulls.dismissReview({
+            owner: pullRequest.owner,
+            repo: pullRequest.repo,
+            pull_number: pullRequest.number,
+            review_id: review.id,
+            message: onSucceededRegexDismissReviewComment,
+        });
+        (0, core_1.debug)(`Dismissed existing review`);
+    }
+};
+const getExistingReview = async (pullRequest) => {
+    (0, core_1.debug)(`Getting reviews`);
+    const reviews = await octokit.rest.pulls.listReviews({
+        owner: pullRequest.owner,
+        repo: pullRequest.repo,
+        pull_number: pullRequest.number,
+    });
+    return reviews.data.find((review) => {
+        return (review.user != null &&
+            isGitHubActionUser(review.user.login) &&
+            (0, exports.hasReviewedState)(review.state));
+    });
+};
+const isGitHubActionUser = (login) => {
+    return login === GITHUB_ACTIONS_LOGIN;
+};
+const hasReviewedState = (state) => {
+    return state === "CHANGES_REQUESTED" || state === "COMMENTED";
+};
+exports.hasReviewedState = hasReviewedState;
+
+
+/***/ }),
+
+/***/ 9470:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateSubscription = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const axios_1 = __importStar(__nccwpck_require__(7269));
+const core = __importStar(__nccwpck_require__(7484));
+async function validateSubscription() {
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    let repoPrivate;
+    if (eventPath && fs_1.default.existsSync(eventPath)) {
+        const eventData = JSON.parse(fs_1.default.readFileSync(eventPath, "utf8"));
+        repoPrivate = eventData?.repository?.private;
+    }
+    const upstream = "morrisoncole/pr-lint-action";
+    const action = process.env.GITHUB_ACTION_REPOSITORY;
+    const docsUrl = "https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions";
+    core.info("");
+    core.info("\u001b[1;36mStepSecurity Maintained Action\u001b[0m");
+    core.info(`Secure drop-in replacement for ${upstream}`);
+    if (repoPrivate === false)
+        core.info("\u001b[32m\u2713 Free for public repositories\u001b[0m");
+    core.info(`\u001b[36mLearn more:\u001b[0m ${docsUrl}`);
+    core.info("");
+    if (repoPrivate === false)
+        return;
+    const serverUrl = process.env.GITHUB_SERVER_URL || "https://github.com";
+    const body = { action: action || "" };
+    if (serverUrl !== "https://github.com")
+        body.ghes_server = serverUrl;
+    try {
+        await axios_1.default.post(`https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/maintained-actions-subscription`, body, { timeout: 3000 });
+    }
+    catch (error) {
+        if ((0, axios_1.isAxiosError)(error) && error.response?.status === 403) {
+            core.error(`\u001b[1;31mThis action requires a StepSecurity subscription for private repositories.\u001b[0m`);
+            core.error(`\u001b[31mLearn how to enable a subscription: ${docsUrl}\u001b[0m`);
+            process.exit(1);
+        }
+        core.info("Timeout or API not reachable. Continuing to next step.");
+    }
+}
+exports.validateSubscription = validateSubscription;
+
+
+/***/ }),
+
 /***/ 2613:
 /***/ ((module) => {
 
@@ -49062,7 +49062,7 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const main_1 = __nccwpck_require__(5915);
+const main_1 = __nccwpck_require__(1730);
 const core_1 = __nccwpck_require__(7484);
 (0, main_1.run)().catch((error) => {
     if (error instanceof Error) {
