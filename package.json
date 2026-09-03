@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "package": "ncc build --source-map --license licenses.txt",
+    "package": "ncc build src/index.ts --source-map --license licenses.txt",
     "lint:eslint": "eslint . --ext .ts",
     "lint:prettier": "prettier \"**/*.{ts,md,json,yml}\" --write",
     "test": "jest"
